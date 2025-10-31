@@ -10,6 +10,7 @@ Contains documentation and milestone submissions.
 - 📄 **[Milestone_2.pdf](./docs/Milestone_2.pdf)** – Official submission report for Milestone 2, covering dataset preparation, preprocessing, Exploration and custom data collection.
 
 - 📄 **[Milestone_3.pdf](./docs/Milestone_3.pdf)** – Official submission report for Milestone 3, covering model selection and choice of architecture.
+- 📄 **[Milestone_4.pdf](./docs/Milestone_4.pdf)** – Official submission report for Milestone 4, covering model training and application-level hyperparameter experimentation.
 ---
 
 ### [`/images`](./images)

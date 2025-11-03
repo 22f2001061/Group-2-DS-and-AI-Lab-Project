@@ -48,6 +48,20 @@ Group-2-DS-and-AI-Lab-Project/
 └── README.md
 ```
 
+
+
+---
+
+📄 **Milestone Documents**
+
+All official milestone submissions are located in the [`docs/`](./docs) directory of the repository:
+
+* **[Milestone_1.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone_1.pdf)** – Covers dataset selection, problem statement, and preliminary findings.
+* **[Milestone_2.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone_2.pdf)** – Details dataset preparation, preprocessing, exploration, and custom data collection.
+* **[Milestone_3.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone_3.pdf)** – Focuses on model selection, architecture choice, and training methodology.
+* **[Milestone_4.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone_4.pdf)** – Documents model training, hyperparameter tuning, evaluation, and application-level experimentation.
+
+
 ---
 
 ## 🧰 Technology Stack / Tools Used

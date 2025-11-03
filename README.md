@@ -51,6 +51,70 @@ Group-2-DS-and-AI-Lab-Project/
 ```
 ---
 
+## 🚀 Usage Guide
+
+This section provides instructions on how to run and reproduce key parts of the VisionAssist project.
+
+---
+
+### 🧠 Model Training
+
+Follow these steps to train the VisionAssist detection model using the [Main.ipynb](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/scripts/training/Main.ipynb) notebook.
+These steps outline the workflow for dataset preparation, fine-tuning YOLOv8, and saving trained weights.
+
+1. **Mount Google Drive in Colab**
+
+   * Mount your Google Drive to access datasets.
+   * Confirm that the shared **YouTube frames dataset** path exists ([Google Drive link](https://drive.google.com/drive/folders/1ztLWfdN3As3kEFBYy0h9rb9OPw6CVTBp?usp=drive_link)).
+   * If not, adjust the directory path accordingly.
+
+2. **Unzip COCO Data**
+
+   * Extract `filtered_coco_data.zip` from Drive into a temporary folder.
+   * Locate the extracted `images` and (if available) `labels` directories.
+
+3. **Combine Datasets**
+
+   * Create a folder named `master_dataset/images`.
+   * Copy all COCO images into it.
+   * Merge the **YouTube frame images** from the custom dataset.
+   * Verify the total number of combined images.
+
+4. **Auto-Annotate Using YOLOv8**
+
+   * Install **Ultralytics** using:
+
+     ```bash
+     pip install ultralytics
+     ```
+   * Load the pretrained `yolov8n.pt` model.
+   * Auto-annotate all images in `master_dataset/images` to generate YOLO TXT labels in `master_dataset/labels`.
+
+5. **Split the Dataset**
+
+   * Create `split_dataset/train`, `split_dataset/valid`, and `split_dataset/test` subfolders for both `images` and `labels`.
+   * Shuffle and distribute files in a **70/20/10** ratio, ensuring each image has its corresponding label file.
+
+6. **Generate Dataset Config YAML**
+
+   * Create a `coco_custom_data.yaml` file that points to the split directories.
+   * Include all 80 COCO classes in the `names:` section.
+
+7. **Train YOLOv8 Model**
+
+   * Run YOLOv8 training with desired hyperparameters:
+
+     ```bash
+     yolo task=detect mode=train model=yolov8n.pt data=coco_custom_data.yaml epochs=50 imgsz=640
+     ```
+
+8. **Save Trained Weights**
+
+   * After training, copy the resulting `best.pt` file from `runs/detect/...` to your Google Drive for safekeeping.
+
+
+
+---
 📄 **Milestone Documents**
 
 All official milestone submissions are located in the [`docs/`](./docs) directory of the repository:

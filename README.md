@@ -2,7 +2,9 @@
 
 ## 🧭 Project Overview
 
-VisionAssist is a real-time navigation aid designed to help visually impaired individuals navigate their surroundings safely. Using object detection, tracking, and distance estimation, the system provides auditory feedback about obstacles and objects in the user’s path. The goal is to create an affordable and efficient assistive tool for enhanced independence and spatial awareness.
+   VisionAssist is a real-time navigation aid designed to help visually impaired individuals navigate their surroundings safely. Using object detection, tracking, and distance estimation, the system provides auditory feedback about obstacles and objects in the user’s path.
+   The project uses a combination of **COCO 2017 dataset** and a **custom dataset** collected from **YouTube video frames** ([available here](https://drive.google.com/drive/folders/1ztLWfdN3As3kEFBYy0h9rb9OPw6CVTBp?usp=drive_link)) to train and fine-tune the YOLO model for real-world scenarios.
+   The goal is to create an affordable and efficient assistive tool for enhanced independence and spatial awareness.
 
 ---
 
@@ -47,9 +49,6 @@ Group-2-DS-and-AI-Lab-Project/
 ├── DATA_GOVERNANCE.md
 └── README.md
 ```
-
-
-
 ---
 
 📄 **Milestone Documents**
@@ -63,16 +62,16 @@ All official milestone submissions are located in the [`docs/`](./docs) director
 
 
 ---
-
 ## 🧰 Technology Stack / Tools Used
 
-* **YOLOv8 (Ultralytics)** – Object detection
-* **ByteTrack** – Multi-object tracking
-* **gTTS (Google Text-to-Speech)** – Voice feedback
-* **OpenCV** – Image and video processing
-* **Python** – Core programming language
-* **MS COCO Dataset** – Pre-trained annotation structure reference
-* **Jupyter Notebooks** – Development and experimentation environment
+   * **YOLOv8 (Ultralytics)** – Object detection
+   * **ByteTrack** – Multi-object tracking
+   * **gTTS (Google Text-to-Speech)** – Voice feedback
+   * **OpenCV** – Image and video processing
+   * **Python** – Core programming language
+   * **MS COCO Dataset** – Base dataset for model training and benchmarking
+   * **[Custom YouTube Frame Dataset](https://drive.google.com/drive/folders/1ztLWfdN3As3kEFBYy0h9rb9OPw6CVTBp?usp=drive_link)** – Additional dataset curated for fine-tuning and real-world diversity
+   * **Jupyter Notebooks** – Development and experimentation environment
 
 ---
 

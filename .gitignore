@@ -1,0 +1,16 @@
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+
+# Log files
+logs/
+*.log
+
+# Local configuration files
+*.env
+
+# Virtual environments
+venv/
+env/
+.venv/

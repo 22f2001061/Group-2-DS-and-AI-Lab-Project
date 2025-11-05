@@ -124,7 +124,7 @@ All official milestone submissions are located in the [`docs/`](./docs) director
 - **[Milestone_2.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone_2.pdf)** – Details dataset preparation, preprocessing, exploration, and custom data collection.
 - **[Milestone_3.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone_3.pdf)** – Focuses on model selection, architecture choice, and training methodology.
 - **[Milestone_4.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone_4.pdf)** – Documents model training, hyperparameter tuning, evaluation, and application-level experimentation.
-- **[Milestone_4 v2.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone%204%20v2.pdf)** – Updates as per the feedback recieved on the M4 submission done in earlier iteration.
+- **[Milestone_4 v2.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone%204%20V2.pdf)** – Updates as per the feedback recieved on the M4 submission done in earlier iteration.
 
 ---
 

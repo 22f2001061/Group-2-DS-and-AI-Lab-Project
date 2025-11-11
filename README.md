@@ -127,6 +127,7 @@ All official milestone submissions are located in the [`docs/`](./docs) director
 - **[Milestone_4 v2.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone%204%20V2.pdf)** – Updates as per the feedback recieved on the M4 submission done in earlier iteration.
 
 - **[Milestone 5.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone%205.pdf)** - Evaluation and Analysis documentation for milestone 5.
+- **[Milestone 5 v2.pdf](https://github.com/22f2001061/Group-2-DS-and-AI-Lab-Project/blob/main/docs/Milestone%205%20v2.pdf)** - finalized version of Milestone 5 documentation report.
 
 ---
 

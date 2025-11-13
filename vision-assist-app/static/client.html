@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Blind Navigation Demo (Camera + Upload)</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+            background: #121212;
+            color: #eee;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #video {
+            width: 480px;
+            border-radius: 8px;
+            border: 2px solid #333;
+        }
+
+        #status {
+            margin-top: 10px;
+        }
+
+        #log {
+            margin-top: 12px;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .alert {
+            color: #ffcc00;
+            margin-bottom: 6px;
+        }
+
+        .section {
+            margin-top: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Blind Navigation — Demo</h1>
+
+    <div class="section">
+        <h3>Live Camera (WebSocket)</h3>
+        <video id="video" autoplay playsinline muted></video>
+        <div id="status">Camera: not started</div>
+        <div id="log"></div>
+    </div>
+
+    <div class="section">
+        <h3>Upload Video (SSE streaming)</h3>
+        <input id="fileInput" type="file" accept="video/*">
+        <button id="uploadBtn">Upload & Process</button>
+        <div id="uploadStatus"></div>
+        <div id="uploadLog"></div>
+    </div>
+
+    <script>
+        /* ---------------- Camera WebSocket ---------------- */
+        const video = document.getElementById('video');
+        const status = document.getElementById('status');
+        const log = document.getElementById('log');
+
+        let wsCamera;
+        let lastAudioUrl = null;
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+                video.srcObject = stream;
+                await video.play();
+                status.textContent = "Camera ready. Connecting to WS...";
+                connectCameraWS();
+            } catch (e) {
+                status.textContent = "Camera error: " + e;
+            }
+        }
+
+        function connectCameraWS() {
+            const proto = (location.protocol === "https:") ? "wss" : "ws";
+            wsCamera = new WebSocket(`${proto}://${location.host}/ws`);
+
+            wsCamera.onopen = () => {
+                status.textContent = "Connected to WS. Streaming frames...";
+                startSendingFrames();
+            };
+
+            wsCamera.onmessage = (evt) => {
+                try {
+                    const msg = JSON.parse(evt.data);
+                    if (msg.type === 'audio' && msg.audio_b64) {
+                        playAudioFromB64(msg.audio_b64);
+                        appendLog(msg.text);
+                    } else if (msg.type === 'error') {
+                        appendLog("Server error: " + msg.message);
+                    }
+                } catch (e) {
+                    console.error("Malformed message", e);
+                }
+            };
+
+            wsCamera.onclose = () => {
+                status.textContent = "WS disconnected. Reconnecting in 3s...";
+                setTimeout(connectCameraWS, 3000);
+            };
+
+            wsCamera.onerror = (e) => console.error("WS error", e);
+        }
+
+        function startSendingFrames() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const fps = 3; // fps to send
+            setInterval(() => {
+                if (!video.videoWidth || !video.videoHeight) return;
+                const w = Math.round(video.videoWidth * 0.6);
+                const h = Math.round(video.videoHeight * 0.6);
+                canvas.width = w;
+                canvas.height = h;
+                ctx.drawImage(video, 0, 0, w, h);
+                canvas.toBlob((blob) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const dataURL = reader.result; // data:image/jpeg;base64,...
+                        const payload = { type: "frame", b64: dataURL };
+                        if (wsCamera && wsCamera.readyState === WebSocket.OPEN) {
+                            wsCamera.send(JSON.stringify(payload));
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                }, 'image/jpeg', 0.5);
+            }, 1000 / fps);
+        }
+
+        function playAudioFromB64(b64) {
+            const byteChars = atob(b64);
+            const byteNumbers = new Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'audio/mp3' });
+            if (lastAudioUrl) URL.revokeObjectURL(lastAudioUrl);
+            const url = URL.createObjectURL(blob);
+            lastAudioUrl = url;
+            const audio = new Audio(url);
+            audio.play().catch(e => console.warn("Audio play error:", e));
+        }
+
+        function appendLog(text) {
+            const el = document.createElement('div');
+            el.className = 'alert';
+            el.textContent = `${new Date().toLocaleTimeString()} — ${text}`;
+            log.insertBefore(el, log.firstChild);
+            while (log.childElementCount > 10) log.removeChild(log.lastChild);
+        }
+
+        /* ---------------- Upload video -> SSE ---------------- */
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const uploadLog = document.getElementById('uploadLog');
+
+        uploadBtn.onclick = async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                uploadStatus.textContent = "Select a video file first.";
+                return;
+            }
+            uploadStatus.textContent = "Uploading...";
+
+            const form = new FormData();
+            form.append('file', file);
+
+            // SSE requires fetch + ReadableStream from response body; but easier: use EventSource via server returning a public URL — not available here.
+            // Instead we'll use fetch + ReadableStream and parse SSE events manually.
+
+            try {
+                const resp = await fetch('/upload_video', { method: 'POST', body: form });
+                if (!resp.ok) {
+                    uploadStatus.textContent = `Upload failed: ${resp.statusText}`;
+                    return;
+                }
+                uploadStatus.textContent = "Processing... (listening for alerts)";
+                // streaming response:
+                const reader = resp.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    // SSE messages are separated by double newlines. Parse them.
+                    let idx;
+                    while ((idx = buffer.indexOf("\n\n")) !== -1) {
+                        const raw = buffer.slice(0, idx);
+                        buffer = buffer.slice(idx + 2);
+                        // parse event lines
+                        const lines = raw.split(/\r?\n/);
+                        let event = null;
+                        let data = '';
+                        for (const line of lines) {
+                            if (line.startsWith('event:')) event = line.replace('event:', '').trim();
+                            else if (line.startsWith('data:')) data += line.replace('data:', '').trim();
+                        }
+                        if (event === 'alert' && data) {
+                            try {
+                                const payload = JSON.parse(data);
+                                if (payload.audio_b64) playAudioFromB64(payload.audio_b64);
+                                const el = document.createElement('div');
+                                el.className = 'alert';
+                                el.textContent = `${new Date().toLocaleTimeString()} — ${payload.text}`;
+                                uploadLog.insertBefore(el, uploadLog.firstChild);
+                                while (uploadLog.childElementCount > 20) uploadLog.removeChild(uploadLog.lastChild);
+                            } catch (e) {
+                                console.warn("Failed to parse alert payload", e);
+                            }
+                        } else if (event === 'error' && data) {
+                            try { const p = JSON.parse(data); uploadLog.insertBefore(Object.assign(document.createElement('div'), { textContent: "ERROR: " + p.message }), uploadLog.firstChild); } catch (e) { }
+                        } else if (event === 'done') {
+                            uploadStatus.textContent = "Processing finished.";
+                        }
+                    }
+                }
+                uploadStatus.textContent = "Stream ended.";
+            } catch (e) {
+                uploadStatus.textContent = "Upload/processing error: " + e;
+                console.error(e);
+            }
+        }
+
+        startCamera();
+    </script>
+</body>
+
+</html>

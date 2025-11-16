@@ -12,3 +12,6 @@ gTTS
 opencv-python-headless
 python-multipart
 ffmpeg-python
+av
+aiortc
+pyttsx3

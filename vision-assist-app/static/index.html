@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>WebRTC H264 + YOLO Inference</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 16px;
+        }
+
+        video {
+            width: 720px;
+            border: 1px solid #ccc;
+        }
+
+        #instructions {
+            margin-top: 12px;
+            width: 720px;
+            min-height: 60px;
+            border: 1px solid #333;
+            padding: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>Upload Video → WebRTC H264 → YOLO Inference</h3>
+    <input id="file" type="file" accept="video/*" />
+    <p />
+    <video id="video" controls></video>
+    <div id="instructions">Waiting for instructions...</div>
+
+    <script>
+        const SERVER_URL = "http://localhost:8000"
+        const video = document.getElementById('video');
+        const instructions = document.getElementById('instructions');
+        let pc;
+        let dc;
+
+        document.getElementById('file').addEventListener('change', async (e) => {
+            const f = e.target.files[0];
+            if (!f) return;
+            video.src = URL.createObjectURL(f);
+            await video.play();
+        });
+
+        video.addEventListener('play', async () => {
+            if (pc) {
+                try { pc.close(); } catch (e) { }
+                pc = null;
+            }
+            pc = new RTCPeerConnection({ iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }] });
+
+            dc = pc.createDataChannel('inference');
+            dc.onopen = () => { console.log('datachannel open'); };
+            dc.onmessage = (ev) => {
+                try {
+                    const obj = JSON.parse(ev.data);
+                    if (obj.type === 'alert') {
+                        instructions.innerText = obj.text || '[no text]';
+                        if (obj.audio_b64) {
+                            const bytes = Uint8Array.from(atob(obj.audio_b64), c => c.charCodeAt(0));
+                            const blob = new Blob([bytes], { type: obj.mime || 'audio/wav' });
+                            const url = URL.createObjectURL(blob);
+                            const a = new Audio(url);
+                            a.play().catch(() => { });
+                        }
+                    } else {
+                        instructions.innerText = ev.data;
+                    }
+                } catch (err) {
+                    instructions.innerText = ev.data;
+                }
+            };
+
+            pc.onicecandidate = (event) => {
+                if (!event.candidate) {
+                    // local description ready, send to server
+                }
+            };
+
+            const stream = video.captureStream();
+            stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+
+            const resp = await fetch(SERVER_URL + '/offer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(pc.localDescription)
+            });
+            const answer = await resp.json();
+            await pc.setRemoteDescription(answer);
+        });
+    </script>
+</body>
+
+</html>

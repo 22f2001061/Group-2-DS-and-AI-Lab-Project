@@ -3,97 +3,634 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>WebRTC H264 + YOLO Inference</title>
+    <title>Blind Navigation Assistant - YOLO + Audio Alerts</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            padding: 16px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 24px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #file {
+            padding: 10px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            cursor: pointer;
         }
 
         video {
-            width: 720px;
-            border: 1px solid #ccc;
+            width: 100%;
+            max-width: 720px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: block;
+            margin: 0 auto;
         }
 
-        #instructions {
+        .status {
+            margin-top: 16px;
+            padding: 16px;
+            border-radius: 8px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .status.waiting {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .status.active {
+            background: #4CAF50;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            animation: pulse 2s infinite;
+        }
+
+        .status.alert {
+            background: #ff6b6b;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            animation: alertPulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes alertPulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 8px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .audio-queue {
             margin-top: 12px;
-            width: 720px;
-            min-height: 60px;
-            border: 1px solid #333;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .connection-status {
+            text-align: center;
             padding: 8px;
+            margin-top: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .connection-status.connecting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .detections-panel {
+            margin-top: 16px;
+            padding: 12px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            border-left: 4px solid #2196F3;
+        }
+
+        .detections-panel h4 {
+            margin: 0 0 8px 0;
+            color: #1976D2;
+        }
+
+        .detection-item {
+            padding: 8px;
+            margin: 4px 0;
+            background: white;
+            border-radius: 4px;
+            font-size: 14px;
+            border-left: 3px solid #2196F3;
+        }
+
+        .detection-item .timestamp {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .debug-log {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .debug-log div {
+            padding: 2px 0;
+            border-bottom: 1px solid #eee;
         }
     </style>
 </head>
 
 <body>
-    <h3>Upload Video → WebRTC H264 → YOLO Inference</h3>
-    <input id="file" type="file" accept="video/*" />
-    <p />
-    <video id="video" controls></video>
-    <div id="instructions">Waiting for instructions...</div>
+    <div class="container">
+        <h1>🦯 Blind Navigation Assistant</h1>
+        <div class="subtitle">Real-time Object Detection with Audio Guidance</div>
+
+        <div class="upload-section">
+            <input id="file" type="file" accept="video/*" />
+        </div>
+
+        <video id="video" muted controls></video>
+
+        <div id="connection-status" class="connection-status disconnected">
+            Disconnected
+        </div>
+
+        <div id="status" class="status waiting">
+            Upload a video to start navigation assistance
+        </div>
+
+        <div class="detections-panel">
+            <h4>📍 Recent Detections</h4>
+            <div id="detections-list">No detections yet...</div>
+        </div>
+
+        <div class="controls">
+            <button id="muteBtn" disabled>🔊 Mute Audio</button>
+            <button id="resetBtn">🔄 Reset</button>
+            <button id="debugBtn">🐛 Toggle Debug</button>
+        </div>
+
+        <div class="audio-queue" id="audioQueue">
+            Queue: Empty | Speech Status: Ready
+        </div>
+
+        <div id="debug-log" class="debug-log" style="display: none;"></div>
+    </div>
 
     <script>
-        const SERVER_URL = "http://localhost:8000"
+        const SERVER_URL = window.location.origin;
         const video = document.getElementById('video');
-        const instructions = document.getElementById('instructions');
-        let pc;
-        let dc;
+        const status = document.getElementById('status');
+        const connectionStatus = document.getElementById('connection-status');
+        const muteBtn = document.getElementById('muteBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const debugBtn = document.getElementById('debugBtn');
+        const audioQueue = document.getElementById('audioQueue');
+        const debugLog = document.getElementById('debug-log');
+        const detectionsList = document.getElementById('detections-list');
 
+        let pc = null;
+        let dc = null;
+        let isMuted = false;
+        let pendingMessages = [];
+        let isSpeaking = false;
+        let showDebug = false;
+        let detectionCount = 0;
+        let speechSynthesis = window.speechSynthesis;
+
+        // Debug logging
+        function log(message) {
+            console.log(message);
+            if (showDebug) {
+                const div = document.createElement('div');
+                div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                debugLog.appendChild(div);
+                debugLog.scrollTop = debugLog.scrollHeight;
+
+                // Keep only last 50 logs
+                while (debugLog.children.length > 50) {
+                    debugLog.removeChild(debugLog.firstChild);
+                }
+            }
+        }
+
+        debugBtn.addEventListener('click', () => {
+            showDebug = !showDebug;
+            debugLog.style.display = showDebug ? 'block' : 'none';
+            if (showDebug) {
+                log('Debug mode enabled');
+                log('Speech synthesis available: ' + ('speechSynthesis' in window));
+            }
+        });
+
+        // Add detection to display list
+        function addDetection(text, timestamp) {
+            detectionCount++;
+            const div = document.createElement('div');
+            div.className = 'detection-item';
+            div.innerHTML = `
+                <strong>#${detectionCount}</strong> ${text}
+                <div class="timestamp">${new Date(timestamp).toLocaleTimeString()}</div>
+            `;
+
+            detectionsList.insertBefore(div, detectionsList.firstChild);
+
+            // Keep only last 5 detections
+            while (detectionsList.children.length > 5) {
+                detectionsList.removeChild(detectionsList.lastChild);
+            }
+        }
+
+        // Text-to-Speech using Web Speech API
+        function speakText(text) {
+            if (isMuted) {
+                log('Speech skipped (muted)');
+                return Promise.resolve();
+            }
+
+            return new Promise((resolve) => {
+                try {
+                    // Cancel any ongoing speech
+                    speechSynthesis.cancel();
+
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 1.2; // Slightly faster for quicker alerts
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+
+                    utterance.onend = () => {
+                        log('Speech completed: ' + text);
+                        resolve();
+                    };
+
+                    utterance.onerror = (event) => {
+                        log('Speech error: ' + event.error);
+                        resolve();
+                    };
+
+                    log('Speaking: ' + text);
+                    speechSynthesis.speak(utterance);
+
+                } catch (err) {
+                    log('Speech synthesis error: ' + err.message);
+                    resolve();
+                }
+            });
+        }
+
+        // Process speech queue
+        async function processSpeechQueue() {
+            if (isSpeaking || pendingMessages.length === 0) return;
+
+            isSpeaking = true;
+            updateQueueStatus();
+
+            while (pendingMessages.length > 0) {
+                const text = pendingMessages.shift();
+                await speakText(text);
+                updateQueueStatus();
+            }
+
+            isSpeaking = false;
+            updateQueueStatus();
+        }
+
+        function updateQueueStatus() {
+            const queueText = `Queue: ${pendingMessages.length} alert(s)`;
+            const statusText = isSpeaking ? 'Speaking...' : 'Ready';
+            audioQueue.textContent = `${queueText} | Speech Status: ${statusText}`;
+        }
+
+        // File upload handler
         document.getElementById('file').addEventListener('change', async (e) => {
             const f = e.target.files[0];
             if (!f) return;
+
             video.src = URL.createObjectURL(f);
-            await video.play();
+            status.className = 'status waiting';
+            status.textContent = 'Video loaded. Click play to start...';
+            log('Video file loaded: ' + f.name);
+
+            // Test speech synthesis
+            if ('speechSynthesis' in window) {
+                log('Speech synthesis is available');
+            } else {
+                log('WARNING: Speech synthesis NOT available');
+                alert('Warning: Text-to-speech may not be available in your browser');
+            }
         });
 
-        video.addEventListener('play', async () => {
+        // Setup WebRTC connection
+        async function setupWebRTC() {
+            if (pc) {
+                log('Closing existing peer connection');
+                try { pc.close(); } catch (e) { }
+                pc = null;
+            }
+
+            pendingMessages = [];
+            isSpeaking = false;
+            detectionCount = 0;
+            detectionsList.textContent = 'No detections yet...';
+
+            log('Creating RTCPeerConnection');
+            connectionStatus.className = 'connection-status connecting';
+            connectionStatus.textContent = '⏳ Connecting...';
+
+            const config = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            };
+
+            pc = new RTCPeerConnection(config);
+
+            // Connection state monitoring
+            pc.onconnectionstatechange = () => {
+                log('Connection state: ' + pc.connectionState);
+
+                switch (pc.connectionState) {
+                    case 'connected':
+                        connectionStatus.className = 'connection-status connected';
+                        connectionStatus.textContent = '✓ Connected - Navigation Active';
+                        status.className = 'status active';
+                        status.textContent = '🎥 Analyzing video... Listening for obstacles';
+                        break;
+                    case 'connecting':
+                        connectionStatus.className = 'connection-status connecting';
+                        connectionStatus.textContent = '⏳ Connecting...';
+                        break;
+                    case 'disconnected':
+                        connectionStatus.className = 'connection-status disconnected';
+                        connectionStatus.textContent = '⚠️ Disconnected (may reconnect)';
+                        break;
+                    case 'failed':
+                        connectionStatus.className = 'connection-status disconnected';
+                        connectionStatus.textContent = '✗ Connection Failed';
+                        log('Connection failed - please reload and try again');
+                        break;
+                    case 'closed':
+                        connectionStatus.className = 'connection-status disconnected';
+                        connectionStatus.textContent = '✗ Connection Closed';
+                        break;
+                }
+            };
+
+            pc.oniceconnectionstatechange = () => {
+                log('ICE connection state: ' + pc.iceConnectionState);
+            };
+
+            // Create data channel
+            dc = pc.createDataChannel('inference');
+            log('DataChannel created');
+
+            dc.onopen = () => {
+                log('DataChannel opened - ready to receive alerts');
+                muteBtn.disabled = false;
+            };
+
+            dc.onclose = () => {
+                log('DataChannel closed');
+            };
+
+            dc.onerror = (error) => {
+                log('DataChannel error: ' + error);
+            };
+
+            dc.onmessage = (ev) => {
+                log('Message received: ' + ev.data.substring(0, 100));
+
+                try {
+                    const obj = JSON.parse(ev.data);
+                    if (obj.type === 'alert') {
+                        const alertText = obj.text || 'Unknown alert';
+                        log('ALERT: ' + alertText);
+
+                        // Add to detection list
+                        addDetection(alertText, obj.timestamp_ms || Date.now());
+
+                        // Update status display
+                        status.className = 'status alert';
+                        status.textContent = `⚠️ ${alertText}`;
+
+                        // Queue text for speech
+                        pendingMessages.push(alertText);
+                        processSpeechQueue();
+
+                        // Reset status after 3 seconds
+                        setTimeout(() => {
+                            if (status.className === 'status alert') {
+                                status.className = 'status active';
+                                status.textContent = '🎥 Analyzing video... Listening for obstacles';
+                            }
+                        }, 3000);
+                    } else {
+                        log('Non-alert message: ' + ev.data);
+                    }
+                } catch (err) {
+                    log('Message parse error: ' + err.message);
+                    log('Raw message: ' + ev.data);
+                }
+            };
+
+            // Add video stream tracks
+            try {
+                const stream = video.captureStream(30);
+                log('Captured video stream with ' + stream.getTracks().length + ' tracks');
+
+                stream.getTracks().forEach(track => {
+                    log('Adding track: ' + track.kind + ' (enabled: ' + track.enabled + ')');
+                    pc.addTrack(track, stream);
+                });
+            } catch (err) {
+                log('Error capturing stream: ' + err.message);
+                status.className = 'status alert';
+                status.textContent = '❌ Failed to capture video stream';
+                return;
+            }
+
+            // Create and send offer
+            try {
+                log('Creating offer...');
+                const offer = await pc.createOffer({
+                    offerToReceiveVideo: true,
+                    offerToReceiveAudio: false
+                });
+
+                log('Setting local description...');
+                await pc.setLocalDescription(offer);
+
+                // Wait for ICE gathering
+                if (pc.iceGatheringState !== 'complete') {
+                    log('Waiting for ICE gathering...');
+                    await new Promise((resolve) => {
+                        const checkState = () => {
+                            if (pc.iceGatheringState === 'complete') {
+                                pc.removeEventListener('icegatheringstatechange', checkState);
+                                resolve();
+                            }
+                        };
+                        pc.addEventListener('icegatheringstatechange', checkState);
+                        setTimeout(resolve, 5000);
+                    });
+                }
+
+                log('Sending offer to server...');
+                const resp = await fetch(SERVER_URL + '/offer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sdp: pc.localDescription.sdp,
+                        type: pc.localDescription.type
+                    })
+                });
+
+                if (!resp.ok) {
+                    throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+                }
+
+                const answer = await resp.json();
+                log('Received answer from server');
+
+                log('Setting remote description...');
+                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                log('WebRTC setup complete');
+
+            } catch (err) {
+                log('Setup error: ' + err.message);
+                status.className = 'status alert';
+                status.textContent = '❌ Connection failed: ' + err.message;
+                connectionStatus.className = 'connection-status disconnected';
+                connectionStatus.textContent = '✗ Connection Error';
+            }
+        }
+
+        // Video play handler
+        video.addEventListener('play', () => {
+            log('Video started playing');
+            setupWebRTC();
+        });
+
+        // Video pause handler
+        video.addEventListener('pause', () => {
+            log('Video paused');
+            status.className = 'status waiting';
+            status.textContent = 'Video paused';
+            speechSynthesis.cancel(); // Stop any ongoing speech
+        });
+
+        // Mute button
+        muteBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            muteBtn.textContent = isMuted ? '🔇 Unmute Audio' : '🔊 Mute Audio';
+            log('Audio ' + (isMuted ? 'muted' : 'unmuted'));
+            if (isMuted) {
+                speechSynthesis.cancel();
+            }
+        });
+
+        // Reset button
+        resetBtn.addEventListener('click', () => {
+            log('Reset initiated');
             if (pc) {
                 try { pc.close(); } catch (e) { }
                 pc = null;
             }
-            pc = new RTCPeerConnection({ iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }] });
-
-            dc = pc.createDataChannel('inference');
-            dc.onopen = () => { console.log('datachannel open'); };
-            dc.onmessage = (ev) => {
-                try {
-                    const obj = JSON.parse(ev.data);
-                    if (obj.type === 'alert') {
-                        instructions.innerText = obj.text || '[no text]';
-                        if (obj.audio_b64) {
-                            const bytes = Uint8Array.from(atob(obj.audio_b64), c => c.charCodeAt(0));
-                            const blob = new Blob([bytes], { type: obj.mime || 'audio/wav' });
-                            const url = URL.createObjectURL(blob);
-                            const a = new Audio(url);
-                            a.play().catch(() => { });
-                        }
-                    } else {
-                        instructions.innerText = ev.data;
-                    }
-                } catch (err) {
-                    instructions.innerText = ev.data;
-                }
-            };
-
-            pc.onicecandidate = (event) => {
-                if (!event.candidate) {
-                    // local description ready, send to server
-                }
-            };
-
-            const stream = video.captureStream();
-            stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-
-            const resp = await fetch(SERVER_URL + '/offer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(pc.localDescription)
-            });
-            const answer = await resp.json();
-            await pc.setRemoteDescription(answer);
+            video.pause();
+            video.currentTime = 0;
+            video.src = '';
+            document.getElementById('file').value = '';
+            pendingMessages = [];
+            isSpeaking = false;
+            detectionCount = 0;
+            speechSynthesis.cancel();
+            status.className = 'status waiting';
+            status.textContent = 'Upload a video to start navigation assistance';
+            connectionStatus.className = 'connection-status disconnected';
+            connectionStatus.textContent = 'Disconnected';
+            detectionsList.textContent = 'No detections yet...';
+            updateQueueStatus();
+            muteBtn.disabled = true;
+            isMuted = false;
+            muteBtn.textContent = '🔊 Mute Audio';
         });
     </script>
 </body>
